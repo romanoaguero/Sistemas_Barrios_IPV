@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa con Filtros Dinámicos</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+
+    <script src="js/datos.js"></script>  
+    <link rel="icon" type="image/png" href="Imag/favicon.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .filters-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid #e9ecef;
+        }
+
+        .filters-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .filter-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+            position: relative;
+        }
+
+        .label-count {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+            display: inline-block;
+            min-width: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+        }
+
+        .label-count.filtered {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+
+        .label-count.empty {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+
+        /* Estilos para el contenedor de búsqueda personalizado */
+        .search-select-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 40px 12px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            cursor: text;
+        }
+
+        .search-input.has-value {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .search-input.placeholder {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .dropdown-arrow {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #6c757d;
+            font-size: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown-arrow.open {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #3498db;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .search-dropdown.show {
+            display: block;
+        }
+
+        .dropdown-option {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f8f9fa;
+            transition: background-color 0.2s ease;
+            font-size: 14px;
+        }
+
+        .dropdown-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dropdown-option.selected {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .dropdown-option.all-option {
+            font-weight: 600;
+            color: #3498db;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .dropdown-option.all-option:hover {
+            background-color: #e3f2fd;
+        }
+
+        .dropdown-option.no-results {
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            cursor: default;
+        }
+
+        .dropdown-option.no-results:hover {
+            background-color: transparent;
+        }
+
+        .clear-filters {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .clear-filters:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .results-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid #e9ecef;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .results-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-bottom: 2px solid #27ae60;
+            padding-bottom: 10px;
+        }
+
+        .results-count {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .record-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .record-item:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.15);
+        }
+
+        .record-item.selected {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border-color: #2980b9;
+        }
+
+        .record-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .record-details {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .google-maps-btn {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .google-maps-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(39, 174, 96, 0.3);
+        }
+
+        .map-container {
+            grid-column: 1 / -1;
+            height: 500px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 1px solid #dee2e6;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .results-section {
+                max-height: 300px;
+            }
+
+            .search-dropdown {
+                max-height: 150px;
+            }
+        }
+
+        /* Custom scrollbar */
+        .results-section::-webkit-scrollbar,
+        .search-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .results-section::-webkit-scrollbar-track,
+        .search-dropdown::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .results-section::-webkit-scrollbar-thumb,
+        .search-dropdown::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border-radius: 10px;
+        }
+
+        .results-section::-webkit-scrollbar-thumb:hover,
+        .search-dropdown::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #2980b9, #1f4e79);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+                🗺️ Sistema Explorador de Barrios
+                <img src="Imag/favicon.png" alt="Logo" style="height: 40px; vertical-align: middle;">
+            </h1>
+            <p><strong>Desarrollado: Area de Planeamiento IPVDU - Tucuman</strong></p>
+        </div>
+        
+        <div class="content">
+            <div class="filters-section">
+                <h2 class="filters-title">🔍 Filtros de Búsqueda</h2>
+                
+                <div class="filter-group">
+                    <label for="nombre-filter" id="nombre-label">Nombre:</label>
+                    <div class="search-select-container">
+                        <input type="text" id="nombre-filter" class="search-input placeholder" placeholder="Buscar nombre..." readonly>
+                        <span class="dropdown-arrow">▼</span>
+                        <div id="nombre-dropdown" class="search-dropdown"></div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label for="codigo-filter" id="codigo-label">Código IPV:</label>
+                    <div class="search-select-container">
+                        <input type="text" id="codigo-filter" class="search-input placeholder" placeholder="Buscar código..." readonly>
+                        <span class="dropdown-arrow">▼</span>
+                        <div id="codigo-dropdown" class="search-dropdown"></div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label for="localidad-filter" id="localidad-label">Localidad:</label>
+                    <div class="search-select-container">
+                        <input type="text" id="localidad-filter" class="search-input placeholder" placeholder="Buscar localidad..." readonly>
+                        <span class="dropdown-arrow">▼</span>
+                        <div id="localidad-dropdown" class="search-dropdown"></div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label for="dto-filter" id="dto-label">Departamento:</label>
+                    <div class="search-select-container">
+                        <input type="text" id="dto-filter" class="search-input placeholder" placeholder="Buscar departamento..." readonly>
+                        <span class="dropdown-arrow">▼</span>
+                        <div id="dto-dropdown" class="search-dropdown"></div>
+                    </div>
+                </div>
+
+                <button class="clear-filters" onclick="clearAllFilters()">🗑️ Limpiar Filtros</button>
+            </div>
+
+            <div class="results-section">
+                <h2 class="results-title">📋 Resultados</h2>
+                <div class="results-count" id="results-count">0 registros encontrados</div>
+                <div id="results-list"></div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    
+    <script>
+        // Datos de ejemplo (reemplazar con tu JSON)
+        let filteredData = [];
+        let map;
+        let currentMarker = null;
+        let allPolygonsGroup = null;
+        let selectedPolygon = null;
+        let selectedRecord = null;
+
+        // Variables para el sistema de búsqueda
+        let searchSelects = {};
+        let currentOpenDropdown = null;
+
+        // Inicializar mapa
+        function initMap() {
+            map = L.map('map').setView([-32.0, -61.0], 7);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            allPolygonsGroup = L.layerGroup().addTo(map);
+            showAllPolygons();
+        }
+
+        // Mostrar todos los polígonos en el mapa
+        function showAllPolygons() {
+            allPolygonsGroup.clearLayers();
+            
+            filteredData.forEach(record => {
+                if (record.geometry && record.geometry.type === "MultiPolygon") {
+                    const geoJsonFeature = {
+                        type: "Feature",
+                        properties: {
+                            NOMBRE: record.NOMBRE,
+                            CODIGO_IPV: record.CODIGO_IPV,
+                            LOCALIDAD: record.LOCALIDAD,
+                            DTO: record.DTO,
+                            ID: record.ID
+                        },
+                        geometry: record.geometry
+                    };
+
+                    const polygon = L.geoJSON(geoJsonFeature, {
+                        style: {
+                            color: '#3498db',
+                            weight: 2,
+                            fillColor: '#3498db',
+                            fillOpacity: 0.3,
+                            opacity: 0.8
+                        },
+                        onEachFeature: function(feature, layer) {
+                            layer.bindPopup(`
+                                <div style="font-family: Arial, sans-serif;">
+                                    <h3 style="margin: 0 0 10px 0; color: #2c3e50;">${feature.properties.NOMBRE}</h3>
+                                    <p style="margin: 5px 0;"><strong>Código IPV:</strong> ${feature.properties.CODIGO_IPV}</p>
+                                    <p style="margin: 5px 0;"><strong>Localidad:</strong> ${feature.properties.LOCALIDAD}</p>
+                                    <p style="margin: 5px 0;"><strong>Departamento:</strong> ${feature.properties.DTO}</p>
+                                    <p style="margin: 10px 0 0 0;">
+                                        <button onclick="openGoogleMaps(${record.Y}, ${record.X})" 
+                                                style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                                            🗺️ Ver en Google Maps
+                                        </button>
+                                        <button onclick="highlightRecord('${feature.properties.ID}')" 
+                                                style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-left: 5px;">
+                                            📋 Ver en Lista
+                                        </button>
+                                    </p>
+                                </div>
+                            `);
+
+                            layer.on('click', function() {
+                                highlightRecord(feature.properties.ID);
+                            });
+
+                            layer.on('mouseover', function(e) {
+                                layer.setStyle({
+                                    weight: 3,
+                                    fillOpacity: 0.5,
+                                    color: '#2980b9'
+                                });
+                            });
+
+                            layer.on('mouseout', function(e) {
+                                if (!selectedRecord || selectedRecord.ID !== feature.properties.ID) {
+                                    layer.setStyle({
+                                        weight: 2,
+                                        fillOpacity: 0.3,
+                                        color: '#3498db'
+                                    });
+                                }
+                            });
+                        }
+                    });
+                    
+                    allPolygonsGroup.addLayer(polygon);
+                }
+            });
+
+            if (filteredData.length > 0 && allPolygonsGroup.getLayers().length > 0) {
+                const group = new L.featureGroup(allPolygonsGroup.getLayers());
+                if (group.getBounds().isValid()) {
+                    map.fitBounds(group.getBounds().pad(0.1));
+                }
+            }
+        }
+
+        function highlightRecord(recordId) {
+            const recordElement = document.querySelector(`[onclick*="'${recordId}'"]`);
+            if (recordElement) {
+                recordElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                selectRecord(recordId, recordElement);
+            }
+        }
+
+        // ✅ NUEVA FUNCIÓN: Inicializar sistema de búsqueda
+        function initSearchSelects() {
+            const filters = [
+                { id: 'nombre', field: 'NOMBRE', label: 'nombres' },
+                { id: 'codigo', field: 'CODIGO_IPV', label: 'códigos' },
+                { id: 'localidad', field: 'LOCALIDAD', label: 'localidades' },
+                { id: 'dto', field: 'DTO', label: 'departamentos' }
+            ];
+
+            filters.forEach(filter => {
+                initSearchSelect(filter.id, filter.field, filter.label);
+            });
+
+            // Cerrar dropdown al hacer clic fuera
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.search-select-container')) {
+                    closeAllDropdowns();
+                }
+            });
+        }
+
+        // ✅ NUEVA FUNCIÓN: Inicializar un select de búsqueda individual
+        function initSearchSelect(filterId, field, label) {
+            const input = document.getElementById(`${filterId}-filter`);
+            const dropdown = document.getElementById(`${filterId}-dropdown`);
+            const arrow = input.nextElementSibling;
+
+            searchSelects[filterId] = {
+                input: input,
+                dropdown: dropdown,
+                arrow: arrow,
+                field: field,
+                label: label,
+                selectedValue: '',
+                isOpen: false
+            };
+
+            // Event listeners
+            input.addEventListener('click', function() {
+                toggleDropdown(filterId);
+            });
+
+            input.addEventListener('input', function() {
+                if (!searchSelects[filterId].isOpen) {
+                    openDropdown(filterId);
+                }
+                filterDropdownOptions(filterId, this.value);
+            });
+
+            input.addEventListener('focus', function() {
+                this.removeAttribute('readonly');
+                this.classList.remove('placeholder');
+            });
+
+            input.addEventListener('blur', function() {
+                setTimeout(() => {
+                    if (!searchSelects[filterId].selectedValue) {
+                        this.setAttribute('readonly', 'true');
+                        this.classList.add('placeholder');
+                        this.value = this.getAttribute('placeholder');
+                    }
+                }, 150);
+            });
+        }
+
+        // ✅ NUEVA FUNCIÓN: Abrir/cerrar dropdown
+        function toggleDropdown(filterId) {
+            if (searchSelects[filterId].isOpen) {
+                closeDropdown(filterId);
+            } else {
+                closeAllDropdowns();
+                openDropdown(filterId);
+            }
+        }
+
+        // ✅ NUEVA FUNCIÓN: Abrir dropdown
+        function openDropdown(filterId) {
+            const select = searchSelects[filterId];
+            select.isOpen = true;
+            select.dropdown.classList.add('show');
+            select.arrow.classList.add('open');
+            select.input.removeAttribute('readonly');
+            select.input.classList.remove('placeholder');
+            
+            if (select.input.value === select.input.getAttribute('placeholder')) {
+                select.input.value = '';
+            }
+            
+            currentOpenDropdown = filterId;
+            updateDropdownOptions(filterId);
+        }
+
+        // ✅ NUEVA FUNCIÓN: Cerrar dropdown
+        function closeDropdown(filterId) {
+            const select = searchSelects[filterId];
+            select.isOpen = false;
+            select.dropdown.classList.remove('show');
+            select.arrow.classList.remove('open');
+            
+            if (!select.selectedValue) {
+                select.input.setAttribute('readonly', 'true');
+                select.input.classList.add('placeholder');
+                select.input.value = select.input.getAttribute('placeholder');
+            }
+            
+            if (currentOpenDropdown === filterId) {
+                currentOpenDropdown = null;
+            }
+        }
+
+        // ✅ NUEVA FUNCIÓN: Cerrar todos los dropdowns
+        function closeAllDropdowns() {
+            Object.keys(searchSelects).forEach(filterId => {
+                closeDropdown(filterId);
+            });
+        }
+
+        // ✅ FUNCIÓN ACTUALIZADA: Actualizar opciones del dropdown y etiquetas
+        function updateDropdownOptions(filterId) {
+            const select = searchSelects[filterId];
+            const currentFilters = getCurrentFilters();
+            
+            // Excluir el filtro actual para obtener opciones disponibles
+            const tempFilters = { ...currentFilters };
+            delete tempFilters[filterId];
+            
+            const availableData = getFilteredData(tempFilters);
+            const options = [...new Set(availableData.map(item => item[select.field]))].sort();
+            
+            // Actualizar etiqueta con contador
+            updateLabelCount(filterId, options.length, select.selectedValue);
+            
+            populateDropdown(filterId, options, '');
+        }
+
+        // ✅ NUEVA FUNCIÓN: Actualizar contador en etiqueta
+        function updateLabelCount(filterId, count, hasSelection) {
+            const label = document.getElementById(`${filterId}-label`);
+            const fieldNames = {
+                'nombre': 'Nombre',
+                'codigo': 'Código IPV',
+                'localidad': 'Localidad',
+                'dto': 'Departamento'
+            };
+            
+            const fieldName = fieldNames[filterId];
+            
+            // Remover contador anterior si existe
+            const existingCount = label.querySelector('.label-count');
+            if (existingCount) {
+                existingCount.remove();
+            }
+            
+            // Crear nuevo contador
+            const countSpan = document.createElement('span');
+            countSpan.className = 'label-count';
+            
+            if (hasSelection) {
+                countSpan.className += ' filtered';
+                countSpan.textContent = '1';
+                countSpan.title = 'Filtro aplicado';
+            } else if (count === 0) {
+                countSpan.className += ' empty';
+                countSpan.textContent = '0';
+                countSpan.title = 'No hay opciones disponibles';
+            } else {
+                countSpan.textContent = count;
+                countSpan.title = `${count} opciones disponibles`;
+            }
+            
+            label.innerHTML = `${fieldName}: `;
+            label.appendChild(countSpan);
+        }
+
+        // ✅ NUEVA FUNCIÓN: Poblar dropdown con opciones
+        function populateDropdown(filterId, options, searchTerm = '') {
+            const select = searchSelects[filterId];
+            const dropdown = select.dropdown;
+            
+            // Filtrar opciones basado en el término de búsqueda
+            const filteredOptions = searchTerm 
+                ? options.filter(option => 
+                    option.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                : options;
+            
+            dropdown.innerHTML = '';
+            
+            // Opción "Todos"
+            const allOption = document.createElement('div');
+            allOption.className = 'dropdown-option all-option';
+            allOption.textContent = `Todos (${options.length} ${select.label})`;
+            allOption.addEventListener('click', () => selectOption(filterId, ''));
+            dropdown.appendChild(allOption);
+            
+            if (filteredOptions.length === 0 && searchTerm) {
+                const noResults = document.createElement('div');
+                noResults.className = 'dropdown-option no-results';
+                noResults.textContent = 'No se encontraron resultados';
+                dropdown.appendChild(noResults);
+            } else {
+                // Opciones individuales
+                filteredOptions.forEach(option => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'dropdown-option';
+                    optionElement.textContent = option;
+                    
+                    if (option === select.selectedValue) {
+                        optionElement.classList.add('selected');
+                    }
+                    
+                    optionElement.addEventListener('click', () => selectOption(filterId, option));
+                    dropdown.appendChild(optionElement);
+                });
+            }
+        }
+
+        // ✅ NUEVA FUNCIÓN: Filtrar opciones del dropdown en tiempo real
+        function filterDropdownOptions(filterId, searchTerm) {
+            const select = searchSelects[filterId];
+            const currentFilters = getCurrentFilters();
+            
+            // Excluir el filtro actual
+            const tempFilters = { ...currentFilters };
+            delete tempFilters[filterId];
+            
+            const availableData = getFilteredData(tempFilters);
+            const options = [...new Set(availableData.map(item => item[select.field]))].sort();
+            
+            populateDropdown(filterId, options, searchTerm);
+        }
+
+        // ✅ FUNCIÓN ACTUALIZADA: Seleccionar opción
+        function selectOption(filterId, value) {
+            const select = searchSelects[filterId];
+            select.selectedValue = value;
+            
+            if (value) {
+                select.input.value = value;
+                select.input.classList.add('has-value');
+                select.input.classList.remove('placeholder');
+            } else {
+                select.input.value = select.input.getAttribute('placeholder');
+                select.input.classList.remove('has-value');
+                select.input.classList.add('placeholder');
+            }
+            
+            closeDropdown(filterId);
+            applyFilters();
+        }
+
+        // ✅ NUEVA FUNCIÓN: Obtener filtros actuales
+        function getCurrentFilters() {
+            const filters = {};
+            Object.keys(searchSelects).forEach(filterId => {
+                const value = searchSelects[filterId].selectedValue;
+                if (value) {
+                    filters[filterId] = value;
+                }
+            });
+            return filters;
+        }
+
+        // ✅ NUEVA FUNCIÓN: Obtener datos filtrados
+        function getFilteredData(filters) {
+            return jsonData.filter(item => {
+                return (!filters.nombre || item.NOMBRE === filters.nombre) &&
+                       (!filters.codigo || item.CODIGO_IPV === filters.codigo) &&
+                       (!filters.localidad || item.LOCALIDAD === filters.localidad) &&
+                       (!filters.dto || item.DTO === filters.dto);
+            });
+        }
+
+        function populateFilters() {
+            try {
+                initSearchSelects();
+                updateAllDropdownOptions();
+            } catch (error) {
+                console.error('Error al poblar filtros:', error);
+            }
+        }
+
+        // ✅ FUNCIÓN ACTUALIZADA: Actualizar todas las opciones de dropdown
+        function updateAllDropdownOptions() {
+            Object.keys(searchSelects).forEach(filterId => {
+                if (!searchSelects[filterId].isOpen) {
+                    updateDropdownOptions(filterId);
+                }
+            });
+        }
+
+        function applyFilters() {
+            const filters = getCurrentFilters();
+            
+            filteredData = jsonData.filter(item => {
+                return (!filters.nombre || item.NOMBRE === filters.nombre) &&
+                       (!filters.codigo || item.CODIGO_IPV === filters.codigo) &&
+                       (!filters.localidad || item.LOCALIDAD === filters.localidad) &&
+                       (!filters.dto || item.DTO === filters.dto);
+            });
+
+            updateAllDropdownOptions();
+            updateResultsList();
+            showAllPolygons();
+            
+            if (filteredData.length === 1) {
+                setTimeout(() => {
+                    const firstItem = document.querySelector('.record-item');
+                    if (firstItem) {
+                        selectRecord(filteredData[0].ID, firstItem);
+                    }
+                }, 100);
+            }
+        }
+
+        function updateResultsList() {
+            const resultsList = document.getElementById('results-list');
+            const resultsCount = document.getElementById('results-count');
+            
+            resultsCount.textContent = `${filteredData.length} registros encontrados`;
+
+            if (filteredData.length === 0) {
+                resultsList.innerHTML = '<div class="no-results">📍 No se encontraron registros con los filtros aplicados</div>';
+                return;
+            }
+
+            resultsList.innerHTML = filteredData.map(item => `
+                <div class="record-item" onclick="selectRecord('${item.ID}', this)">
+                    <div class="record-name">${item.NOMBRE}</div>
+                    <div class="record-details">
+                        📍 ${item.LOCALIDAD}, ${item.DTO} | 🏷️ ${item.CODIGO_IPV}
+                    </div>
+                    <button class="google-maps-btn" onclick="openGoogleMaps(${item.Y}, ${item.X}); event.stopPropagation();">
+                        🗺️ Ver en Google Maps
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function selectRecord(id, element) {
+            document.querySelectorAll('.record-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+
+            selectedRecord = filteredData.find(item => item.ID === id);
+            
+            if (selectedRecord) {
+                if (element) {
+                    element.classList.add('selected');
+                }
+                highlightPolygonOnMap(selectedRecord);
+            }
+        }
+
+        function highlightPolygonOnMap(record) {
+            if (selectedPolygon) {
+                map.removeLayer(selectedPolygon);
+                selectedPolygon = null;
+            }
+
+            allPolygonsGroup.eachLayer(function(layer) {
+                layer.eachLayer(function(sublayer) {
+                    sublayer.setStyle({
+                        color: '#3498db',
+                        weight: 2,
+                        fillColor: '#3498db',
+                        fillOpacity: 0.3,
+                        opacity: 0.8
+                    });
+                });
+            });
+
+            if (record.geometry && record.geometry.type === "MultiPolygon") {
+                const geoJsonFeature = {
+                    type: "Feature",
+                    properties: {
+                        NOMBRE: record.NOMBRE,
+                        CODIGO_IPV: record.CODIGO_IPV,
+                        LOCALIDAD: record.LOCALIDAD,
+                        DTO: record.DTO,
+                        ID: record.ID
+                    },
+                    geometry: record.geometry
+                };
+
+                selectedPolygon = L.geoJSON(geoJsonFeature, {
+                    style: {
+                        color: '#e74c3c',
+                        weight: 4,
+                        fillColor: '#e74c3c',
+                        fillOpacity: 0.6,
+                        opacity: 1,
+                        dashArray: '10, 5'
+                    }
+                }).addTo(map);
+
+                selectedPolygon.bindPopup(`
+                    <div style="font-family: Arial, sans-serif;">
+                        <h3 style="margin: 0 0 10px 0; color: #e74c3c; font-size: 16px;">🔍 SELECCIONADO</h3>
+                        <h3 style="margin: 0 0 10px 0; color: #2c3e50;">${record.NOMBRE}</h3>
+                        <p style="margin: 5px 0;"><strong>Código IPV:</strong> ${record.CODIGO_IPV}</p>
+                        <p style="margin: 5px 0;"><strong>Localidad:</strong> ${record.LOCALIDAD}</p>
+                        <p style="margin: 5px 0;"><strong>Departamento:</strong> ${record.DTO}</p>
+                        <p style="margin: 10px 0 0 0;">
+                            <button onclick="openGoogleMaps(${record.Y}, ${record.X})" 
+                                    style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                                🗺️ Ver en Google Maps
+                            </button>
+                        </p>
+                    </div>
+                `).openPopup();
+
+                map.fitBounds(selectedPolygon.getBounds().pad(0.2));
+
+                let opacity = 0.6;
+                let increasing = false;
+                const animatePolygon = setInterval(() => {
+                    if (selectedPolygon && map.hasLayer(selectedPolygon)) {
+                        if (increasing) {
+                            opacity += 0.1;
+                            if (opacity >= 0.8) increasing = false;
+                        } else {
+                            opacity -= 0.1;
+                            if (opacity <= 0.4) increasing = true;
+                        }
+                        selectedPolygon.setStyle({ fillOpacity: opacity });
+                    } else {
+                        clearInterval(animatePolygon);
+                    }
+                }, 200);
+            }
+        }
+
+        function openGoogleMaps(lat, lng) {
+            const url = `https://www.google.com/maps?q=${lat},${lng}`;
+            window.open(url, '_blank');
+        }
+
+        // ✅ FUNCIÓN ACTUALIZADA: Clear all filters
+        function clearAllFilters() {
+            // Limpiar todos los filtros de búsqueda
+            Object.keys(searchSelects).forEach(filterId => {
+                const select = searchSelects[filterId];
+                select.selectedValue = '';
+                select.input.value = select.input.getAttribute('placeholder');
+                select.input.classList.remove('has-value');
+                select.input.classList.add('placeholder');
+                select.input.setAttribute('readonly', 'true');
+                closeDropdown(filterId);
+            });
+            
+            filteredData = [...jsonData];
+            selectedRecord = null;
+            
+            if (selectedPolygon) {
+                map.removeLayer(selectedPolygon);
+                selectedPolygon = null;
+            }
+            
+            document.querySelectorAll('.record-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            updateAllDropdownOptions();
+            updateResultsList();
+            showAllPolygons();
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+
+            // Ya se cargó jsonData desde datos.js (vía <script src>)
+            filteredData = [...jsonData];
+            populateFilters();
+            updateResultsList();
+            showAllPolygons();
+        });
+    </script>
+</body>
+</html>
