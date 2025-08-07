@@ -371,7 +371,13 @@
         .search-dropdown::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(135deg, #2980b9, #1f4e79);
         }
-    </style>
+    
+/* Evita que el scroll se propague al body en móviles */
+.scrollable-container, select {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+</style>
 <style>
 /* Scroll mejorado para contenedores con resultados o filtros */
 .scrollable-container, .record-list, #nombre-filter, #codigo-filter, #localidad-filter, #dto-filter {
