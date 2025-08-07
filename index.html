@@ -1,17 +1,15 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa con Filtros Dinámicos</title>
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-
-    <script src="js/datos.js"></script>  
-    <link rel="icon" type="image/png" href="Imag/favicon.png">
-    
-    <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mapa con Filtros Dinámicos</title>
+<!-- Leaflet CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" rel="stylesheet"/>
+<script src="js/datos.js"></script>
+<link href="Imag/favicon.png" rel="icon" type="image/png"/>
+<style>
         * {
             margin: 0;
             padding: 0;
@@ -374,76 +372,93 @@
             background: linear-gradient(135deg, #2980b9, #1f4e79);
         }
     </style>
-</head>
+<style>
+/* Scroll mejorado para contenedores con resultados o filtros */
+.scrollable-container, .record-list, #nombre-filter, #codigo-filter, #localidad-filter, #dto-filter {
+    max-height: 300px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    border-radius: 10px;
+}
+
+/* Aumentar área táctil de opciones */
+.record-item, select option {
+    padding: 10px;
+    font-size: 16px;
+}
+
+/* Mejoras generales para móviles */
+@media (max-width: 600px) {
+    .form-group {
+        padding: 10px;
+    }
+
+    select, input, button {
+        font-size: 16px;
+        padding: 10px;
+    }
+}
+</style></head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1 style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+<div class="container">
+<div class="header">
+<h1 style="display: flex; align-items: center; justify-content: center; gap: 12px;">
                 🗺️ Sistema Explorador de Barrios
-                <img src="Imag/favicon.png" alt="Logo" style="height: 40px; vertical-align: middle;">
-            </h1>
-            <p><strong>Desarrollado: Area de Planeamiento IPVDU - Tucuman</strong></p>
-        </div>
-        
-        <div class="content">
-            <div class="filters-section">
-                <h2 class="filters-title">🔍 Filtros de Búsqueda</h2>
-                
-                <div class="filter-group">
-                    <label for="nombre-filter" id="nombre-label">Nombre:</label>
-                    <div class="search-select-container">
-                        <input type="text" id="nombre-filter" class="search-input placeholder" placeholder="Buscar nombre..." readonly>
-                        <span class="dropdown-arrow">▼</span>
-                        <div id="nombre-dropdown" class="search-dropdown"></div>
-                    </div>
-                </div>
-
-                <div class="filter-group">
-                    <label for="codigo-filter" id="codigo-label">Código IPV:</label>
-                    <div class="search-select-container">
-                        <input type="text" id="codigo-filter" class="search-input placeholder" placeholder="Buscar código..." readonly>
-                        <span class="dropdown-arrow">▼</span>
-                        <div id="codigo-dropdown" class="search-dropdown"></div>
-                    </div>
-                </div>
-
-                <div class="filter-group">
-                    <label for="localidad-filter" id="localidad-label">Localidad:</label>
-                    <div class="search-select-container">
-                        <input type="text" id="localidad-filter" class="search-input placeholder" placeholder="Buscar localidad..." readonly>
-                        <span class="dropdown-arrow">▼</span>
-                        <div id="localidad-dropdown" class="search-dropdown"></div>
-                    </div>
-                </div>
-
-                <div class="filter-group">
-                    <label for="dto-filter" id="dto-label">Departamento:</label>
-                    <div class="search-select-container">
-                        <input type="text" id="dto-filter" class="search-input placeholder" placeholder="Buscar departamento..." readonly>
-                        <span class="dropdown-arrow">▼</span>
-                        <div id="dto-dropdown" class="search-dropdown"></div>
-                    </div>
-                </div>
-
-                <button class="clear-filters" onclick="clearAllFilters()">🗑️ Limpiar Filtros</button>
-            </div>
-
-            <div class="results-section">
-                <h2 class="results-title">📋 Resultados</h2>
-                <div class="results-count" id="results-count">0 registros encontrados</div>
-                <div id="results-list"></div>
-            </div>
-        </div>
-
-        <div class="map-container">
-            <div id="map"></div>
-        </div>
-    </div>
-
-    <!-- Leaflet JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    
-    <script>
+                <img alt="Logo" src="Imag/favicon.png" style="height: 40px; vertical-align: middle;"/>
+</h1>
+<p><strong>Desarrollado: Area de Planeamiento IPVDU - Tucuman</strong></p>
+</div>
+<div class="content">
+<div class="filters-section">
+<h2 class="filters-title">🔍 Filtros de Búsqueda</h2>
+<div class="filter-group">
+<label for="nombre-filter" id="nombre-label">Nombre:</label>
+<div class="search-select-container">
+<input class="search-input placeholder" id="nombre-filter" placeholder="Buscar nombre..." readonly="" type="text"/>
+<span class="dropdown-arrow">▼</span>
+<div class="search-dropdown" id="nombre-dropdown"></div>
+</div>
+</div>
+<div class="filter-group">
+<label for="codigo-filter" id="codigo-label">Código IPV:</label>
+<div class="search-select-container">
+<input class="search-input placeholder" id="codigo-filter" placeholder="Buscar código..." readonly="" type="text"/>
+<span class="dropdown-arrow">▼</span>
+<div class="search-dropdown" id="codigo-dropdown"></div>
+</div>
+</div>
+<div class="filter-group">
+<label for="localidad-filter" id="localidad-label">Localidad:</label>
+<div class="search-select-container">
+<input class="search-input placeholder" id="localidad-filter" placeholder="Buscar localidad..." readonly="" type="text"/>
+<span class="dropdown-arrow">▼</span>
+<div class="search-dropdown" id="localidad-dropdown"></div>
+</div>
+</div>
+<div class="filter-group">
+<label for="dto-filter" id="dto-label">Departamento:</label>
+<div class="search-select-container">
+<input class="search-input placeholder" id="dto-filter" placeholder="Buscar departamento..." readonly="" type="text"/>
+<span class="dropdown-arrow">▼</span>
+<div class="search-dropdown" id="dto-dropdown"></div>
+</div>
+</div>
+<button class="clear-filters" onclick="clearAllFilters()">🗑️ Limpiar Filtros</button>
+</div>
+<div class="results-section">
+<h2 class="results-title">📋 Resultados</h2>
+<div class="results-count" id="results-count">0 registros encontrados</div>
+<div id="results-list"></div>
+</div>
+</div>
+<div class="map-container">
+<div id="map"></div>
+</div>
+</div>
+<!-- Leaflet JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
         // Datos de ejemplo (reemplazar con tu JSON)
         let filteredData = [];
         let map;
