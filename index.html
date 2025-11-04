@@ -3,11 +3,33 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Mapa con Filtros Dinámicos</title>
+<title>Sistema Explorador de Barrios - IPVDU</title>
+<!-- PWA Meta Tags -->
+<meta name="theme-color" content="#1e3c72"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Barrios IPVDU"/>
+<link rel="manifest" href="manifest.json"/>
 <!-- Leaflet CSS -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" rel="stylesheet"/>
 <script src="js/datos.js"></script>
 <link href="Imag/favicon.png" rel="icon" type="image/png"/>
+<link rel="apple-touch-icon" href="Imag/favicon.png"/>
+<script>
+    // Registro del Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('Service Worker registrado con éxito:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('Error al registrar el Service Worker:', error);
+                });
+        });
+    }
+</script>
 <style>
         * {
             margin: 0;
@@ -46,7 +68,7 @@
 .header::before {
     content: '';
     position: absolute;
-    top: 0;
+    top: 0;  
     left: 0;
     right: 0;
     bottom: 0;
@@ -612,11 +634,32 @@
             font-size: 12px;
             font-weight: 600;
             transition: all 0.3s ease;
+            margin-right: 8px;
+            margin-bottom: 5px;
         }
 
         .google-maps-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 3px 10px rgba(39, 174, 96, 0.3);
+        }
+
+        /* NUEVO BOTÓN CATASTRO */
+        .catastro-btn {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-bottom: 5px;
+        }
+
+        .catastro-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(155, 89, 182, 0.3);
         }
 
         .map-container {
@@ -874,8 +917,139 @@
         padding: 10px;
     }
 }
+
+/* Estilos para el banner de instalación PWA */
+.install-banner {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    max-width: 90%;
+    width: 400px;
+    display: none;
+    animation: slideUp 0.4s ease;
+}
+
+.install-banner.show {
+    display: block;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.install-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.install-banner-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.install-banner-text {
+    flex: 1;
+}
+
+.install-banner-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.install-banner-description {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.install-banner-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.install-btn, .install-dismiss-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.install-btn {
+    background: white;
+    color: #1e3c72;
+    flex: 1;
+}
+
+.install-btn:hover {
+    background: #f0f0f0;
+    transform: scale(1.05);
+}
+
+.install-dismiss-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.install-dismiss-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 480px) {
+    .install-banner {
+        bottom: 10px;
+        width: calc(100% - 20px);
+        padding: 12px 15px;
+    }
+    
+    .install-banner-icon {
+        font-size: 28px;
+    }
+    
+    .install-banner-title {
+        font-size: 13px;
+    }
+    
+    .install-banner-description {
+        font-size: 11px;
+    }
+}
+
 </style></head>
 <body>
+<!-- Banner de instalación PWA -->
+<div class="install-banner" id="installBanner">
+    <div class="install-banner-content">
+        <div class="install-banner-icon">📱</div>
+        <div class="install-banner-text">
+            <div class="install-banner-title">Instalar Aplicación</div>
+            <div class="install-banner-description">Accede rápidamente desde tu pantalla de inicio</div>
+        </div>
+    </div>
+    <div class="install-banner-buttons">
+        <button class="install-btn" id="installBtn">Instalar</button>
+        <button class="install-dismiss-btn" id="dismissBtn">Ahora no</button>
+    </div>
+</div>
 <div class="container">
 <div class="header">
     <div class="header-content">
@@ -1047,11 +1221,15 @@
                                     <p style="margin: 5px 0;"><strong>Departamento:</strong> ${feature.properties.DTO}</p>
                                     <p style="margin: 10px 0 0 0;">
                                         <button onclick="openGoogleMaps(${record.Y}, ${record.X})" 
-                                                style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                                                style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-right: 5px;">
                                             🗺️ Ver en Google Maps
                                         </button>
+                                        <button onclick="openCatastro(${record.Y}, ${record.X})" 
+                                                style="background: #9b59b6; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                                            📋 Buscar Padrón Catastral
+                                        </button>
                                         <button onclick="highlightRecord('${feature.properties.ID}')" 
-                                                style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-left: 5px;">
+                                                style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-left: 5px; margin-top: 5px;">
                                             📋 Ver en Lista
                                         </button>
                                     </p>
@@ -1557,6 +1735,9 @@
                     <button class="google-maps-btn" onclick="openGoogleMaps(${item.Y}, ${item.X}); event.stopPropagation();">
                         🗺️ Ver en Google Maps
                     </button>
+                    <button class="catastro-btn" onclick="openCatastro(${item.Y}, ${item.X}); event.stopPropagation();">
+                        📋 Buscar Padrón Catastral
+                    </button>
                 </div>
             `).join('');
         }
@@ -1627,8 +1808,12 @@
                         <p style="margin: 5px 0;"><strong>Departamento:</strong> ${record.DTO}</p>
                         <p style="margin: 10px 0 0 0;">
                             <button onclick="openGoogleMaps(${record.Y}, ${record.X})" 
-                                    style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                                    style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-right: 5px;">
                                 🗺️ Ver en Google Maps
+                            </button>
+                            <button onclick="openCatastro(${record.Y}, ${record.X})" 
+                                    style="background: #9b59b6; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                                📋 Buscar Padrón Catastral
                             </button>
                         </p>
                     </div>
@@ -1659,6 +1844,12 @@
             const url = `https://www.google.com/maps?q=${lat},${lng}`;
             window.open(url, '_blank');
         }
+
+       // ✅ FUNCIÓN ACTUALIZADA: Abrir visor catastral con zoom 20 por defecto
+    function openCatastro(lat, lng) {
+    const url = `https://romanoaguero.github.io/visor_catastro/#map=18/${lat}/${lng}`;
+    window.open(url, '_blank');
+}
 
         // ✅ FUNCIÓN ACTUALIZADA: Limpiar todos los filtros
         function clearAllFilters() {
@@ -1694,16 +1885,120 @@
             showAllPolygons();
         }
 
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            initMap();
+       // Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    initMap();
+    filteredData = [...jsonData];
+    populateFilters();
+    updateResultsList();
+    showAllPolygons();
+    initPWA(); // Inicializar PWA
+});
 
-            // Ya se cargó jsonData desde datos.js (vía <script src>)
-            filteredData = [...jsonData];
-            populateFilters();
-            updateResultsList();
-            showAllPolygons();
-        });
+// ==================== PWA INSTALLATION ====================
+let deferredPrompt;
+const installBanner = document.getElementById('installBanner');
+const installBtn = document.getElementById('installBtn');
+const dismissBtn = document.getElementById('dismissBtn');
+
+function initPWA() {
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(registration => {
+                console.log('Service Worker registrado:', registration);
+            })
+            .catch(error => {
+                console.log('Error al registrar Service Worker:', error);
+            });
+    }
+
+    // Escuchar el evento beforeinstallprompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        const dismissed = localStorage.getItem('pwa-dismissed');
+        const dismissedDate = localStorage.getItem('pwa-dismissed-date');
+        
+        if (!dismissed || (dismissedDate && Date.now() - parseInt(dismissedDate) > 7 * 24 * 60 * 60 * 1000)) {
+            setTimeout(() => {
+                installBanner.classList.add('show');
+            }, 3000);
+        }
+    });
+
+    // Botón de instalación
+    installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+            console.log('Usuario aceptó la instalación');
+            localStorage.removeItem('pwa-dismissed');
+            localStorage.removeItem('pwa-dismissed-date');
+        }
+        
+        deferredPrompt = null;
+        installBanner.classList.remove('show');
+    });
+
+    // Botón de rechazar
+    dismissBtn.addEventListener('click', () => {
+        installBanner.classList.remove('show');
+        localStorage.setItem('pwa-dismissed', 'true');
+        localStorage.setItem('pwa-dismissed-date', Date.now().toString());
+    });
+
+    // Detectar si ya está instalada
+    window.addEventListener('appinstalled', () => {
+        console.log('PWA instalada exitosamente');
+        installBanner.classList.remove('show');
+        localStorage.removeItem('pwa-dismissed');
+        localStorage.removeItem('pwa-dismissed-date');
+    });
+
+    // Para iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone;
+    
+    if (isIOS && !isStandalone) {
+        const dismissed = localStorage.getItem('pwa-dismissed');
+        const dismissedDate = localStorage.getItem('pwa-dismissed-date');
+        
+        if (!dismissed || (dismissedDate && Date.now() - parseInt(dismissedDate) > 7 * 24 * 60 * 60 * 1000)) {
+            setTimeout(() => {
+                showIOSInstallInstructions();
+            }, 3000);
+        }
+    }
+}
+
+function showIOSInstallInstructions() {
+    installBanner.innerHTML = `
+        <div class="install-banner-content">
+            <div class="install-banner-icon">🍎</div>
+            <div class="install-banner-text">
+                <div class="install-banner-title">Agregar a Pantalla de Inicio</div>
+                <div class="install-banner-description">
+                    Toca el botón de compartir <span style="font-size: 16px;">⎙</span> y luego "Agregar a pantalla de inicio"
+                </div>
+            </div>
+        </div>
+        <div class="install-banner-buttons">
+            <button class="install-dismiss-btn" onclick="dismissIOSBanner()" style="width: 100%;">Entendido</button>
+        </div>
+    `;
+    installBanner.classList.add('show');
+}
+
+function dismissIOSBanner() {
+    installBanner.classList.remove('show');
+    localStorage.setItem('pwa-dismissed', 'true');
+    localStorage.setItem('pwa-dismissed-date', Date.now().toString());
+}
     </script>
 </body>
 </html>
