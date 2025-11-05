@@ -17,8 +17,8 @@
 <link href="Imag/favicon.png" rel="icon" type="image/png"/>
 <link rel="apple-touch-icon" href="Imag/favicon.png"/>
 <script>
-    // Registro del Service Worker para PWA
-    if ('serviceWorker' in navigator) {
+    // Registro del Service Worker para PWA - Solo en entornos web
+    if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
                 .then(registration => {
@@ -1224,7 +1224,7 @@
                                                 style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-right: 5px;">
                                             🗺️ Ver en Google Maps
                                         </button>
-                                        <button onclick="openCatastro(${record.Y}, ${record.X})" 
+                                        <button onclick="openCatastro(${record.Y}, ${record.X}, '${record.NOMBRE.replace(/'/g, "\\'")}')" 
                                                 style="background: #9b59b6; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
                                             📋 Buscar Padrón Catastral
                                         </button>
@@ -1735,7 +1735,7 @@
                     <button class="google-maps-btn" onclick="openGoogleMaps(${item.Y}, ${item.X}); event.stopPropagation();">
                         🗺️ Ver en Google Maps
                     </button>
-                    <button class="catastro-btn" onclick="openCatastro(${item.Y}, ${item.X}); event.stopPropagation();">
+                    <button class="catastro-btn" onclick="openCatastro(${item.Y}, ${item.X}, '${item.NOMBRE.replace(/'/g, "\\'")}'); event.stopPropagation();">
                         📋 Buscar Padrón Catastral
                     </button>
                 </div>
@@ -1811,7 +1811,7 @@
                                     style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-right: 5px;">
                                 🗺️ Ver en Google Maps
                             </button>
-                            <button onclick="openCatastro(${record.Y}, ${record.X})" 
+                            <button onclick="openCatastro(${record.Y}, ${record.X}, '${record.NOMBRE.replace(/'/g, "\\'")}')" 
                                     style="background: #9b59b6; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
                                 📋 Buscar Padrón Catastral
                             </button>
@@ -1845,11 +1845,13 @@
             window.open(url, '_blank');
         }
 
-       // ✅ FUNCIÓN ACTUALIZADA: Abrir visor catastral con zoom 20 por defecto
-    function openCatastro(lat, lng) {
-    const url = `https://romanoaguero.github.io/visor_catastro/#map=18/${lat}/${lng}`;
-    window.open(url, '_blank');
-}
+        // ✅ FUNCIÓN ACTUALIZADA: Abrir visor catastral con nombre del barrio
+        function openCatastro(lat, lng, nombreBarrio) {
+            // Codificar el nombre para URL (reemplazar espacios y caracteres especiales)
+            const nombreCodificado = encodeURIComponent(nombreBarrio);
+            const url = `https://romanoaguero.github.io/visor_catastro/#map=20/${lat}/${lng}/${nombreCodificado}`;
+            window.open(url, '_blank');
+        }
 
         // ✅ FUNCIÓN ACTUALIZADA: Limpiar todos los filtros
         function clearAllFilters() {
@@ -1903,7 +1905,7 @@ const dismissBtn = document.getElementById('dismissBtn');
 
 function initPWA() {
     // Registrar Service Worker
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
         navigator.serviceWorker.register('sw.js')
             .then(registration => {
                 console.log('Service Worker registrado:', registration);
