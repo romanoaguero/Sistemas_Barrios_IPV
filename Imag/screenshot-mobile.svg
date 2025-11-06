@@ -1,0 +1,9 @@
+<svg width="720" height="1280" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="1280" fill="#1e3c72"/>
+  <text x="360" y="640" font-family="Arial" font-size="36" fill="white" text-anchor="middle" transform="rotate(0, 360, 640)">
+    Sistema Explorador de Barrios IPVDU
+  </text>
+  <text x="360" y="700" font-family="Arial" font-size="30" fill="white" text-anchor="middle" transform="rotate(0, 360, 700)">
+    Vista Mobile
+  </text>
+</svg>
