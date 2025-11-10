@@ -10,7 +10,7 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Barrios IPVDU"/>
-<link rel="manifest" href="manifest.json"/>
+<link rel="manifest" href="./manifest.json"/>
 <!-- Leaflet CSS -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" rel="stylesheet"/>
 <script src="js/datos.js"></script>
@@ -20,7 +20,9 @@
     // Registro del Service Worker para PWA - Solo en entornos web
     if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
+            // Detectar la ruta base correcta
+            const basePath = window.location.pathname.includes('/Sistemas_Barrios_IPV/') ? '/Sistemas_Barrios_IPV/' : './';
+            navigator.serviceWorker.register(basePath + 'sw.js')
                 .then(registration => {
                     console.log('Service Worker registrado con éxito:', registration.scope);
                 })
@@ -1224,7 +1226,7 @@
                                                 style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-right: 5px;">
                                             🗺️ Ver en Google Maps
                                         </button>
-                                        <button onclick="openCatastro(${record.Y}, ${record.X}, '${record.NOMBRE.replace(/'/g, "\\'")}')" 
+                                        <button onclick="openCatastro(${record.Y}, ${record.X}, '${record.NOMBRE}')" 
                                                 style="background: #9b59b6; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
                                             📋 Buscar Padrón Catastral
                                         </button>
@@ -1845,15 +1847,43 @@
             window.open(url, '_blank');
         }
 
-        // ✅ FUNCIÓN ACTUALIZADA: Abrir visor catastral con nombre del barrio
+         // ✅ FUNCIÓN CORREGIDA: Abrir visor catastral con nombre del barrio
         function openCatastro(lat, lng, nombreBarrio) {
-            // Codificar el nombre para URL (reemplazar espacios y caracteres especiales)
-            const nombreCodificado = encodeURIComponent(nombreBarrio);
-            const url = `https://romanoaguero.github.io/visor_catastro/#map=18/${lat}/${lng}/${nombreCodificado}`;
+            // Seguridad: asegurar que siempre haya strings
+            nombreBarrio = nombreBarrio || '';
+            
+            console.log("🔍 DEBUG openCatastro - Parámetros recibidos:");
+            console.log("lat:", lat, "lng:", lng, "nombreBarrio:", nombreBarrio);
+
+            // Normalizar texto para evitar errores con caracteres especiales
+            let nombreNormalizado = nombreBarrio
+                .normalize("NFD")                     // separa letras y tildes
+                .replace(/[\u0300-\u036f]/g, "")      // elimina tildes
+                .replace(/ñ/gi, "n")                  // reemplaza ñ o Ñ por n
+                .replace(/°/g, "")                    // elimina símbolos de grado
+                .replace(/[()]/g, "")                 // elimina paréntesis
+                .replace(/[^a-zA-Z0-9\s_-]/g, "_")    // reemplaza caracteres especiales por guion bajo
+                .replace(/_+/g, "_")                  // reemplaza múltiples guiones bajos por uno solo
+                .trim()                               // quita espacios al inicio y fin
+                .replace(/\s+/g, "_")                 // reemplaza espacios por guiones bajos
+                .replace(/^_+|_+$/g, "");             // elimina guiones bajos al inicio y final
+
+            console.log("🔍 DEBUG openCatastro - Nombre normalizado:", nombreNormalizado);
+
+            // Si el nombre quedó vacío después de normalizar, usar "barrio"
+            if (!nombreNormalizado || nombreNormalizado.length < 2) {
+                nombreNormalizado = "barrio";
+                console.warn("⚠️ Nombre muy corto o vacío, usando 'barrio' por defecto");
+            }
+
+            // Construir la URL
+            const url = `https://romanoaguero.github.io/visor_catastro/#map=18/${lat}/${lng}/${nombreNormalizado}`;
+            
+            console.log("🔍 DEBUG openCatastro - URL final:", url);
+            
+            // Abrir en nueva pestaña
             window.open(url, '_blank');
         }
-
-        // ✅ FUNCIÓN ACTUALIZADA: Limpiar todos los filtros
         function clearAllFilters() {
             // Ocultar notificación de autocompletado
             hideAutoCompleteNotification();
@@ -1897,87 +1927,145 @@ document.addEventListener('DOMContentLoaded', function() {
     initPWA(); // Inicializar PWA
 });
 
-// ==================== PWA INSTALLATION ====================
+
+// ==================== PWA INSTALLATION MEJORADO ====================
 let deferredPrompt;
 const installBanner = document.getElementById('installBanner');
 const installBtn = document.getElementById('installBtn');
 const dismissBtn = document.getElementById('dismissBtn');
 
+// Debugging mejorado
+console.log('🔍 PWA Debug: Iniciando verificación...');
+
 function initPWA() {
-    // Registrar Service Worker
-    if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
-        navigator.serviceWorker.register('sw.js')
+    // 1. Verificar Service Worker
+    if ('serviceWorker' in navigator) {
+        console.log('✅ Service Worker soportado');
+        
+        const basePath = window.location.pathname.includes('/Sistemas_Barrios_IPV/') 
+            ? '/Sistemas_Barrios_IPV/' 
+            : './';
+            
+        navigator.serviceWorker.register(basePath + 'sw.js')
             .then(registration => {
-                console.log('Service Worker registrado:', registration);
+                console.log('✅ Service Worker registrado:', registration.scope);
+                
+                // Verificar si está activo
+                if (registration.active) {
+                    console.log('✅ Service Worker activo');
+                } else if (registration.installing) {
+                    console.log('⏳ Service Worker instalándose...');
+                } else if (registration.waiting) {
+                    console.log('⏳ Service Worker esperando...');
+                }
             })
             .catch(error => {
-                console.log('Error al registrar Service Worker:', error);
+                console.error('❌ Error al registrar Service Worker:', error);
             });
+    } else {
+        console.warn('❌ Service Worker NO soportado en este navegador');
     }
 
-    // Escuchar el evento beforeinstallprompt
+    // 2. Verificar si ya está instalada
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('✅ PWA ya instalada');
+        return;
+    }
+
+    // 3. Escuchar beforeinstallprompt
     window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('🎉 Evento beforeinstallprompt detectado!');
         e.preventDefault();
         deferredPrompt = e;
         
+        // Verificar si fue rechazado recientemente
         const dismissed = localStorage.getItem('pwa-dismissed');
         const dismissedDate = localStorage.getItem('pwa-dismissed-date');
+        const daysSinceDismiss = dismissedDate 
+            ? (Date.now() - parseInt(dismissedDate)) / (1000 * 60 * 60 * 24) 
+            : 999;
         
-        if (!dismissed || (dismissedDate && Date.now() - parseInt(dismissedDate) > 7 * 24 * 60 * 60 * 1000)) {
+        console.log('📅 Días desde último rechazo:', Math.floor(daysSinceDismiss));
+        
+        if (!dismissed || daysSinceDismiss > 7) {
             setTimeout(() => {
+                console.log('📱 Mostrando banner de instalación');
                 installBanner.classList.add('show');
-            }, 3000);
+            }, 2000); // Reducido a 2 segundos
+        } else {
+            console.log('⏰ Banner no mostrado (rechazado recientemente)');
         }
     });
 
-    // Botón de instalación
+    // 4. Botón de instalación
     installBtn.addEventListener('click', async () => {
-        if (!deferredPrompt) return;
+        console.log('👆 Botón de instalación clickeado');
         
+        if (!deferredPrompt) {
+            console.warn('❌ No hay prompt diferido disponible');
+            return;
+        }
+        
+        installBanner.classList.remove('show');
         deferredPrompt.prompt();
+        
         const { outcome } = await deferredPrompt.userChoice;
+        console.log('🎯 Resultado de instalación:', outcome);
         
         if (outcome === 'accepted') {
-            console.log('Usuario aceptó la instalación');
+            console.log('✅ Usuario aceptó la instalación');
             localStorage.removeItem('pwa-dismissed');
             localStorage.removeItem('pwa-dismissed-date');
+        } else {
+            console.log('❌ Usuario rechazó la instalación');
         }
         
         deferredPrompt = null;
-        installBanner.classList.remove('show');
     });
 
-    // Botón de rechazar
+    // 5. Botón de rechazar
     dismissBtn.addEventListener('click', () => {
+        console.log('❌ Usuario rechazó el banner');
         installBanner.classList.remove('show');
         localStorage.setItem('pwa-dismissed', 'true');
         localStorage.setItem('pwa-dismissed-date', Date.now().toString());
     });
 
-    // Detectar si ya está instalada
+    // 6. Detectar instalación exitosa
     window.addEventListener('appinstalled', () => {
-        console.log('PWA instalada exitosamente');
+        console.log('🎉 PWA instalada exitosamente!');
         installBanner.classList.remove('show');
         localStorage.removeItem('pwa-dismissed');
         localStorage.removeItem('pwa-dismissed-date');
     });
 
-    // Para iOS
+    // 7. Manejo especial para iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     const isStandalone = window.navigator.standalone;
     
-    if (isIOS && !isStandalone) {
-        const dismissed = localStorage.getItem('pwa-dismissed');
-        const dismissedDate = localStorage.getItem('pwa-dismissed-date');
-        
-        if (!dismissed || (dismissedDate && Date.now() - parseInt(dismissedDate) > 7 * 24 * 60 * 60 * 1000)) {
-            setTimeout(() => {
-                showIOSInstallInstructions();
-            }, 3000);
+    if (isIOS) {
+        console.log('🍎 Dispositivo iOS detectado');
+        if (!isStandalone) {
+            console.log('📱 No está en modo standalone, mostrando instrucciones iOS');
+            const dismissed = localStorage.getItem('pwa-dismissed');
+            const dismissedDate = localStorage.getItem('pwa-dismissed-date');
+            const daysSinceDismiss = dismissedDate 
+                ? (Date.now() - parseInt(dismissedDate)) / (1000 * 60 * 60 * 24) 
+                : 999;
+            
+            if (!dismissed || daysSinceDismiss > 7) {
+                setTimeout(() => {
+                    showIOSInstallInstructions();
+                }, 2000);
+            }
         }
     }
+
+    // 8. Botón manual de instalación (para testing)
+    createManualInstallButton();
 }
 
+// Instrucciones para iOS
 function showIOSInstallInstructions() {
     installBanner.innerHTML = `
         <div class="install-banner-content">
@@ -1985,7 +2073,7 @@ function showIOSInstallInstructions() {
             <div class="install-banner-text">
                 <div class="install-banner-title">Agregar a Pantalla de Inicio</div>
                 <div class="install-banner-description">
-                    Toca el botón de compartir <span style="font-size: 16px;">⎙</span> y luego "Agregar a pantalla de inicio"
+                    Toca <span style="font-weight: bold;">⎙ Compartir</span> y luego <span style="font-weight: bold;">"Agregar a pantalla de inicio"</span>
                 </div>
             </div>
         </div>
@@ -2000,6 +2088,76 @@ function dismissIOSBanner() {
     installBanner.classList.remove('show');
     localStorage.setItem('pwa-dismissed', 'true');
     localStorage.setItem('pwa-dismissed-date', Date.now().toString());
+}
+
+// Botón manual para forzar instalación (útil para debugging)
+function createManualInstallButton() {
+    // Solo en desarrollo o si el banner no aparece
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const debugBtn = document.createElement('button');
+        debugBtn.textContent = '🔧 Debug: Forzar Banner';
+        debugBtn.style.cssText = `
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 99999;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        `;
+        debugBtn.onclick = () => {
+            localStorage.removeItem('pwa-dismissed');
+            localStorage.removeItem('pwa-dismissed-date');
+            if (deferredPrompt) {
+                installBanner.classList.add('show');
+            } else {
+                alert('❌ beforeinstallprompt no se ha disparado aún.\n\nVerifica:\n1. HTTPS activo\n2. Manifest válido\n3. Service Worker registrado\n4. Iconos PNG disponibles');
+            }
+        };
+        document.body.appendChild(debugBtn);
+    }
+}
+
+// Diagnóstico completo
+function checkPWARequirements() {
+    console.log('🔍 === DIAGNÓSTICO PWA ===');
+    
+    // 1. HTTPS
+    console.log('1. HTTPS:', window.location.protocol === 'https:' ? '✅' : '❌');
+    
+    // 2. Service Worker
+    console.log('2. Service Worker:', 'serviceWorker' in navigator ? '✅' : '❌');
+    
+    // 3. Manifest
+    fetch('./manifest.json')
+        .then(r => r.json())
+        .then(manifest => {
+            console.log('3. Manifest:', '✅', manifest);
+        })
+        .catch(e => {
+            console.log('3. Manifest:', '❌', e);
+        });
+    
+    // 4. Ya instalada
+    console.log('4. Ya instalada:', 
+        window.matchMedia('(display-mode: standalone)').matches ? '✅' : '❌'
+    );
+    
+    console.log('========================');
+}
+
+// Ejecutar diagnóstico
+checkPWARequirements();
+
+// Inicializar PWA cuando el DOM esté listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPWA);
+} else {
+    initPWA();
 }
     </script>
 </body>
