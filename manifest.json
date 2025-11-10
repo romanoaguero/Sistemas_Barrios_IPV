@@ -4,35 +4,40 @@
   "short_name": "Barrios IPVDU",
   "description": "Sistema de exploración de barrios del IPVDU Tucumán",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#1e3c72",
   "theme_color": "#1e3c72",
   "orientation": "portrait-primary",
+  "categories": ["utilities", "productivity"],
+  "lang": "es-AR",
+  "dir": "ltr",
   "icons": [
     {
-      "src": "Imag/icon-192.svg",
+      "src": "Imag/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "Imag/icon-512.svg",
+      "src": "Imag/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
+
   "screenshots": [
     {
-      "src": "Imag/screenshot-desktop.svg",
+      "src": "Imag/screenshot-desktop.png",
       "sizes": "1280x720",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "form_factor": "wide"
     },
     {
-      "src": "Imag/screenshot-mobile.svg",
+      "src": "Imag/screenshot-mobile.png",
       "sizes": "720x1280",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "form_factor": "narrow"
     }
   ]
